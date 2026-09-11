@@ -12,8 +12,8 @@ authors:
     given-names: "<Your First Name>"
     affiliation: "<Your Institution>"
     # orcid: "https://orcid.org/0000-0000-0000-0000"
-repository-code: "https://github.com/<your-username>/qopt"
-url: "https://github.com/<your-username>/qopt"
+repository-code: "https://github.com/Sumitchongder/Q-OPT"
+url: "https://github.com/Sumitchongder/Q-OPT"
 abstract: >-
   A security-constrained QUBO framework for adaptive routing and key
   management across hybrid quantum-key-distribution (QKD), post-quantum
