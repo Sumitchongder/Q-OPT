@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e . --no-deps
+
+      - name: Module self-checks (smoke test)
+        run: |
+          python -m qopt.network.topology
+          python -m qopt.qkd.channel
+          python -m qopt.pqc.hybrid_kdf
+          python -m qopt.threat.risk_engine
+          python -m qopt.optimization.qubo
+          python -m qopt.optimization.qubo_to_ising
+          python -m qopt.optimization.classical_baselines
+          python -m qopt.optimization.milp_baseline
+          python -m qopt.optimization.qaoa_qiskit
+          python -m qopt.optimization.rl_baseline
+
+      - name: Run test suite
+        run: python -m pytest tests/ -v
+
+      - name: Quick experiment sanity check (E1, tiny seed count)
+        run: python experiments/e1_solver_comparison.py --n-seeds 2 --n-requests 2 --k-paths 2 --topology A
+
+  notebook:
+    name: Quickstart notebook executes end-to-end
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e . --no-deps
+          pip install nbconvert ipykernel
+
+      - name: Register kernel
+        run: python -m ipykernel install --user --name qopt-ci
+
+      - name: Execute notebook
+        run: |
+          jupyter nbconvert --to notebook --execute \
+            --ExecutePreprocessor.kernel_name=qopt-ci \
+            --ExecutePreprocessor.timeout=600 \
+            notebooks/00_quickstart.ipynb \
+            --output /tmp/executed_quickstart.ipynb

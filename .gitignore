@@ -1,0 +1,79 @@
+# ==============================================================================
+# Q-OPT .gitignore
+# ==============================================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# --- Testing / coverage ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- IBM Quantum / Qiskit credentials (NEVER commit these) ---
+qiskit-ibm-runtime.json
+*.qiskit-ibm-runtime
+.qiskit/
+*.token
+*.env
+.env.local
+
+# --- Generated experiment outputs ---
+# NOTE: figures/, tables/, and results/ ARE version-controlled in this repo
+# (not ignored) so reviewers and readers can see results without re-running
+# every experiment. Only ignore stray/regenerated artifacts outside those
+# tracked paths (e.g. accidental writes to the repo root).
+/*.png
+/*.pdf
+/*.csv
+results/qaoa_hw_problem_hw_result_*.json
+
+# --- OS junk ---
+.DS_Store
+desktop.ini

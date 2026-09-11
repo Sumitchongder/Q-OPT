@@ -1,0 +1,15 @@
+numpy==2.4.4
+scipy==1.17.1
+pandas==3.0.2
+networkx==3.6.1
+matplotlib==3.10.8
+qiskit==2.5.2
+qiskit-aer==0.17.2
+qiskit-algorithms==0.4.0
+qiskit-optimization==0.7.0
+qiskit-ibm-runtime==0.49.0
+tqdm>=4.66
+pytest>=8.0
+
+# Optional (only needed for --benchmark live PQC timing / --use-marrakesh-noise):
+# liboqs-python

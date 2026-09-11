@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question / discuss the paper
+    url: https://github.com/OWNER/REPO/discussions
+    about: For questions about methodology, results, or reproduction that aren't bugs.

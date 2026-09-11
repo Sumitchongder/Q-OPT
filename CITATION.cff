@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it using the metadata below.
+  A companion paper is in preparation; this entry will be updated with
+  the full citation once published.
+title: >-
+  Q-OPT: Quantum-Optimized Crypto-Agility for Attack-Resilient
+  QKD-PQC-QRNG Networks
+type: software
+authors:
+  - family-names: "<Your Last Name>"
+    given-names: "<Your First Name>"
+    affiliation: "<Your Institution>"
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+repository-code: "https://github.com/<your-username>/qopt"
+url: "https://github.com/<your-username>/qopt"
+abstract: >-
+  A security-constrained QUBO framework for adaptive routing and key
+  management across hybrid quantum-key-distribution (QKD), post-quantum
+  cryptography (PQC), and quantum-random-number-generation (QRNG)
+  networks. Solved with QAOA (Qiskit), validated against classical
+  baselines (exact, MILP, greedy, simulated annealing, tabular
+  Q-learning), and confirmed on real IBM Quantum hardware
+  (ibm_marrakesh).
+keywords:
+  - quantum key distribution
+  - post-quantum cryptography
+  - QAOA
+  - QUBO
+  - quantum optimization
+  - network security
+  - Qiskit
+license: MIT
+version: 0.1.0
+date-released: "2026-09-10"

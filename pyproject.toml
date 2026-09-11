@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qopt"
+version = "0.1.0"
+description = "Q-OPT: Quantum-Optimized Crypto-Agility for Attack-Resilient QKD-PQC-QRNG Networks"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "pandas>=2.2",
+    "networkx>=3.2",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "qiskit>=1.2",
+    "qiskit-aer>=0.15",
+    "qiskit-algorithms>=0.3",
+    "qiskit-optimization>=0.6",
+    "qiskit-ibm-runtime>=0.29",
+    "tqdm>=4.66",
+    "pytest>=8.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["qopt*"]
+
+[tool.pytest.ini_options]
+# pytest maintains its own internal warning-capture context per test (it
+# calls warnings.simplefilter("always") around each test item to build its
+# warnings summary), which overrides any warnings.filterwarnings(...) call
+# made in application code (e.g. qopt/__init__.py) -- that filter still
+# correctly silences the warning for normal `python script.py` runs, but
+# pytest needs its OWN filter configured here to respect the same
+# suppression in `pytest -v` output and the warnings summary.
+filterwarnings = [
+    "ignore:.*NLocal.*deprecated.*:DeprecationWarning",
+    "ignore:.*BlueprintCircuit.*deprecated.*:DeprecationWarning",
+]

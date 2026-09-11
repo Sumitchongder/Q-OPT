@@ -1,0 +1,7 @@
+# Optional development dependencies (linting/formatting/notebook execution).
+# Not required to run the experiments -- only for contributors.
+black>=24.0
+ruff>=0.4
+nbconvert>=7.0
+ipykernel>=6.0
+pyyaml>=6.0

@@ -1,0 +1,23 @@
+# Normalize line endings for all text files
+* text=auto eol=lf
+
+# Explicit source types
+*.py     text diff=python
+*.md     text diff=markdown
+*.sh     text eol=lf
+*.toml   text
+*.cfg    text
+*.ini    text
+*.yml    text
+*.yaml   text
+
+# Jupyter notebooks: treat as text but avoid noisy diffs on output cells
+*.ipynb  text -diff
+
+# Binary / generated artifacts
+*.png    binary
+*.pdf    binary
+*.json   text
+
+# Keep CSV as text (they're small, plain-text tables here)
+*.csv    text
