@@ -93,11 +93,13 @@ def main():
     for ax, m, lab in [(axes[0], "p_feas", "P(feasible)"), (axes[1], "r_eff", "Effective ratio r_eff"),
                        (axes[2], "p_opt", "P(optimum)")]:
         for j, (var, p, col, lb) in enumerate(variants):
-            d = summ[(summ.variant == var) & (summ.p == p)].set_index("family").loc[fams]
+            d = summ[(summ.variant == var) & (summ.p == p)].set_index("family").reindex(fams)
+            if d[m].isna().all():      # depth not run (e.g. CI smoke test with --p-xy 1 --p-pen 1)
+                continue
             ax.bar(x + (j - 1.5) * w, d[m], w, color=col, label=lb,
                    yerr=[d[m] - d[f"{m}_lo"], d[f"{m}_hi"] - d[m]], error_kw=dict(lw=0.6, capsize=1.5))
         if m == "r_eff":
-            rr = summ[(summ.variant == "XY") & (summ.p == 1)].set_index("family").loc[fams].r_rand
+            rr = summ[(summ.variant == "XY") & (summ.p == 1)].set_index("family").reindex(fams).r_rand
             ax.scatter(x, rr, marker="_", s=180, color="k", zorder=5, label="uniform-feasible floor")
         ax.set_xticks(x, fams, rotation=0, fontsize=7)
         ax.set_title(lab, fontsize=8.5)
