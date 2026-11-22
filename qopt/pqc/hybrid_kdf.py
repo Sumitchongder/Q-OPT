@@ -9,7 +9,7 @@ We use Python's `cryptography` package's HKDF (RFC 5869) for the
 actual primitive; the *cryptographic* claim made in the paper should
 be limited to "the combiner does not reduce security below either
 individual scheme, given a secure HKDF and a binding context string"
-per the cited combiner literature -- Q-OPT does not attempt to prove
+per the cited combiner literature, Q-OPT does not attempt to prove
 a new security theorem, it uses an established combiner mechanism.
 """
 from __future__ import annotations

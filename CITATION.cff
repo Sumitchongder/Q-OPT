@@ -4,32 +4,33 @@ message: >-
   A companion paper is in preparation; this entry will be updated with
   the full citation once published.
 title: >-
-  Q-OPT: Quantum-Optimized Crypto-Agility for Attack-Resilient
-  QKD-PQC-QRNG Networks
+  Q-OPT: Coupled Crypto-Agility for QKD-PQC-QRNG Networks with
+  Constraint-Preserving QAOA
 type: software
 authors:
-  - family-names: "<Your Last Name>"
-    given-names: "<Your First Name>"
-    affiliation: "<Your Institution>"
-    # orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: "Chongder"
+    given-names: "Sumit"
+    affiliation: "Department of Computer Science & Engineering and Department of Physics, Indian Institute of Technology Jodhpur"
+    # orcid: "https://orcid.org/0009-0005-9866-8483"
 repository-code: "https://github.com/Sumitchongder/Q-OPT"
 url: "https://github.com/Sumitchongder/Q-OPT"
 abstract: >-
-  A security-constrained QUBO framework for adaptive routing and key
-  management across hybrid quantum-key-distribution (QKD), post-quantum
-  cryptography (PQC), and quantum-random-number-generation (QRNG)
-  networks. Solved with QAOA (Qiskit), validated against classical
-  baselines (exact, MILP, greedy, simulated annealing, tabular
-  Q-learning), and confirmed on real IBM Quantum hardware
-  (ibm_marrakesh).
+  Reference implementation of a coupled block-one-hot formulation of
+  network-wide crypto-mode (QKD / PQC / hybrid) and path assignment under
+  shared QKD key budgets, PQC compute and QRNG entropy; a hard-budget
+  digital twin for policy evaluation; and a constraint-preserving XY-mixer
+  QAOA executed on IBM Quantum hardware with symmetry-verification error
+  detection.
 keywords:
   - quantum key distribution
   - post-quantum cryptography
   - QAOA
   - QUBO
+  - XY mixer
+  - crypto-agility
   - quantum optimization
   - network security
   - Qiskit
 license: MIT
-version: 0.1.0
-date-released: "2026-09-10"
+version: 2.1.0
+date-released: "2026-11-22"

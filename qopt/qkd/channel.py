@@ -86,14 +86,59 @@ def secret_key_rate_bits_per_pulse(Q_mu: float, E_mu: float, p: ChannelParams,
     return float(max(R, 0.0))
 
 
+def secret_key_rate_lmc05(length_km: float, p: ChannelParams,
+                          qber_shift: float = 0.0) -> tuple[float, float, float]:
+    """
+    Asymptotic decoy-state BB84 secret-key rate per pulse in the
+    infinite-decoy limit (Lo, Ma & Chen, PRL 94, 230504 (2005); GLLP,
+    QIC 4, 325 (2004)):
+
+        R = q { -Q_mu f_EC h2(E_mu) + Q_1 [1 - h2(e_1)] }
+
+        Y_1 = Y_0 + eta - Y_0 eta            single-photon yield
+        Q_1 = Y_1 mu exp(-mu)                single-photon gain
+        e_1 = [e_0 Y_0 + e_d (Y_1 - Y_0)] / Y_1
+
+    ``qber_shift`` models an adversarial / degradation disturbance; it is
+    applied to *both* E_mu and e_1 (an intercept-resend adversary acting on
+    single-photon pulses raises e_1 one-for-one, which is the conservative
+    choice for the defender).
+
+    Returns (R_per_pulse, Q_mu, E_mu).
+    """
+    eta = transmittance(length_km, p.fiber_loss_db_per_km) * p.detector_efficiency
+    Y0 = 2.0 * p.dark_count_rate
+    mu = p.mean_photon_number
+    e0, ed = 0.5, p.intrinsic_qber
+    Q_mu = Y0 + 1.0 - np.exp(-mu * eta)
+    E_mu = (e0 * Y0 + ed * (1.0 - np.exp(-mu * eta))) / max(Q_mu, 1e-15)
+    Y1 = Y0 + eta - Y0 * eta
+    Q1 = Y1 * mu * np.exp(-mu)
+    e1 = (e0 * Y0 + ed * (Y1 - Y0)) / max(Y1, 1e-15)
+    E_mu = float(np.clip(E_mu + qber_shift, 1e-9, 0.5))
+    e1 = float(np.clip(e1 + qber_shift, 1e-9, 0.5))
+    q = 0.5  # BB84 sifting (standard, non-efficient basis choice)
+    R = q * (-Q_mu * p.error_correction_inefficiency * h2(E_mu) + Q1 * (1.0 - h2(e1)))
+    return float(max(R, 0.0)), float(Q_mu), E_mu
+
+
 def key_generation_rate_bps(length_km: float, p: ChannelParams,
                              qber_shift: float = 0.0,
-                             decoy_state_efficiency: float = 0.9) -> tuple[float, float, float]:
-    """Returns (rate_bps, Q_mu, E_mu) for a link of given length."""
+                             decoy_state_efficiency: float = 0.9,
+                             model: str = "lmc05") -> tuple[float, float, float]:
+    """
+    Returns (rate_bps, Q_mu, E_mu) for a link of given length.
+
+    model="lmc05"      Lo-Ma-Chen infinite-decoy GLLP bound (default, v2.0+).
+    model="simplified" the v0.1 pedagogical formula, kept only so that
+                       legacy results under ``legacy/v1`` stay reproducible.
+    """
+    if model == "lmc05":
+        R_per_pulse, Q_mu, E_mu = secret_key_rate_lmc05(length_km, p, qber_shift)
+        return R_per_pulse * p.pulse_rate_hz, Q_mu, E_mu
     Q_mu, E_mu = gain_and_qber(length_km, p, qber_shift=qber_shift)
     R_per_pulse = secret_key_rate_bits_per_pulse(Q_mu, E_mu, p, decoy_state_efficiency)
-    rate_bps = R_per_pulse * p.pulse_rate_hz
-    return rate_bps, Q_mu, E_mu
+    return R_per_pulse * p.pulse_rate_hz, Q_mu, E_mu
 
 
 if __name__ == "__main__":

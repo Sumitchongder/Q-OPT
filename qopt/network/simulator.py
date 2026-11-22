@@ -2,7 +2,7 @@
 Q-OPT-NET scenario simulator: composes topology + QKD channel physics +
 key pools + QRNG resources + attacks + risk engine into per-timestep
 link/node state, matching the dataset schema in Section 30 of the
-design notes (a reduced but faithful subset -- every column that is
+design notes (a reduced but faithful subset, every column that is
 actually consumed by the QUBO/optimizers is present; purely descriptive
 columns from the full spec that don't affect optimization, e.g. raw
 per-photon detector counts, are omitted for tractability).

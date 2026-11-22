@@ -9,76 +9,41 @@ on:
 
 jobs:
   test:
-    name: Test (Python ${{ matrix.python-version }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.11", "3.12"]
-
+        python-version: ["3.10", "3.12"]
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
-
-      - name: Install dependencies
+      - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ "${{ matrix.python-version }}" = "3.10" ]; then pip install -r requirements-py310.txt; else pip install -r requirements.txt; fi
           pip install -e . --no-deps
-
-      - name: Module self-checks (smoke test)
+      - name: Unit + equivalence tests
+        run: python -m pytest tests/ -q
+      - name: Experiment smoke run (tiny seed counts)
+        working-directory: experiments
         run: |
-          python -m qopt.network.topology
-          python -m qopt.qkd.channel
-          python -m qopt.pqc.hybrid_kdf
-          python -m qopt.threat.risk_engine
-          python -m qopt.optimization.qubo
-          python -m qopt.optimization.qubo_to_ising
-          python -m qopt.optimization.classical_baselines
-          python -m qopt.optimization.milp_baseline
-          python -m qopt.optimization.qaoa_qiskit
-          python -m qopt.optimization.rl_baseline
-
-      - name: Run test suite
-        run: python -m pytest tests/ -v
-
-      - name: Quick experiment sanity check (E1, tiny seed count)
-        run: python experiments/e1_solver_comparison.py --n-seeds 2 --n-requests 2 --k-paths 2 --topology A
-
-  notebook:
-    name: Quickstart notebook executes end-to-end
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
+          python exp01_coupling_structure.py --n-seeds 2 --sizes 3 4 --loads 1.0
+          python exp02_digital_twin.py --n-seeds 2 --n-epochs 3
+          python exp04_ansatz_comparison.py --n-seeds 1 --p-xy 1 --p-pen 1
+      - name: Rehearse the hardware notebook on FakeMarrakesh (no QPU)
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e . --no-deps
-          pip install nbconvert ipykernel
-
-      - name: Register kernel
-        run: python -m ipykernel install --user --name qopt-ci
-
-      - name: Execute notebook
-        run: |
-          jupyter nbconvert --to notebook --execute \
-            --ExecutePreprocessor.kernel_name=qopt-ci \
-            --ExecutePreprocessor.timeout=600 \
-            notebooks/00_quickstart.ipynb \
-            --output /tmp/executed_quickstart.ipynb
+          pip install nbformat nbclient ipykernel
+          python -m ipykernel install --user --name python3
+          python - <<'PY'
+          import nbformat
+          from nbclient import NotebookClient
+          nb = nbformat.read("notebooks/qpu_run.ipynb", as_version=4)
+          for c in nb.cells:
+              if c.cell_type == "code" and "SHOTS_REQUESTED" in c.source:
+                  c.source = c.source.replace("SHOTS_REQUESTED  = 8192", "SHOTS_REQUESTED  = 1024")
+          NotebookClient(nb, timeout=3600, kernel_name="python3", resources={"metadata": {"path": "notebooks"}}).execute()
+          PY

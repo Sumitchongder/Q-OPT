@@ -4,12 +4,12 @@ the design notes).
 
 Two execution paths, sharing 100% of the circuit-construction code:
 
-  1. `run_qaoa_aer(...)`      -- local noiseless/noisy simulation via
+  1. `run_qaoa_aer(...)`     , local noiseless/noisy simulation via
      qiskit-aer. This is the path used for all development, CI and the
      experiment sweeps in this repository (E1-E3, E12, E13, E15).
 
   2. `scripts/run_on_ibm_marrakesh.py` (separate file, NOT imported by
-     default) -- submits the *same* circuits built here to the real
+     default), submits the *same* circuits built here to the real
      `ibm_marrakesh` QPU via qiskit-ibm-runtime, with a hard shot/time
      budget so it stays within an ~8 minute allocation. It is kept in
      its own script specifically so nothing in the reproducible
@@ -22,7 +22,7 @@ QAOA here follows the textbook alternating-operator ansatz:
     H_C = Ising cost Hamiltonian from qubo_to_ising
 
 The outer-loop classical optimizer is COBYLA (gradient-free, robust to
-sampling noise -- a standard choice for NISQ-era QAOA).
+sampling noise, a standard choice for NISQ-era QAOA).
 """
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ def run_qaoa_aer(problem: QUBOProblem, reps: int = 1, shots: int = 2048,
     # BUG FIX (discovered while building the E15 noise-sweep experiment):
     # `AerSampler()` constructed with no arguments uses its OWN internal
     # default simulator and completely IGNORES the `backend` object built
-    # above -- `qiskit_aer.primitives.SamplerV2` has no `backend` constructor
+    # above, `qiskit_aer.primitives.SamplerV2` has no `backend` constructor
     # parameter. This silently meant every noise_model passed to this
     # function (including every call with FakeMarrakesh's calibrated noise
     # in tests/test_qaoa_fake_marrakesh.py) had ZERO effect: results were
@@ -96,7 +96,7 @@ def run_qaoa_aer(problem: QUBOProblem, reps: int = 1, shots: int = 2048,
     # execution semantics into SamplerV2 is `SamplerV2.from_backend(...)`,
     # or equivalently passing `options={"backend_options": {...}}`. Fixed
     # here via `from_backend`, which also means results for noisy runs
-    # will now differ from before this fix -- see the errata note in
+    # will now differ from before this fix, see the errata note in
     # README.md documenting exactly what this changes.
     sampler = AerSampler.from_backend(backend)
     rng = np.random.default_rng(seed)

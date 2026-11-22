@@ -1,61 +1,52 @@
 # Changelog
 
-All notable changes to this project are documented here. Format loosely
-follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-
-## [0.1.0] — 2026-09
+## [2.1.0] - 2026-11-22
 
 ### Added
-- Core package: network topology generators (A–E), QKD channel physics
-  model, key-pool dynamics, PQC resource profiles, QRNG resource model,
-  risk engine, hybrid KDF combiner.
-- QUBO builder (path+mode selection formulation) and QUBO→Ising
-  conversion, verified exact on all 2^n bitstrings for test instances.
-- Classical baselines: Exact (brute force), Greedy, Simulated Annealing,
-  MILP (`scipy.optimize.milp`), tabular Q-learning.
-- QAOA solver on Qiskit/Aer, with real `ibm_marrakesh` hardware
-  validation at p=1, 2, 3 (see `results/`).
-- 15 experiment scripts covering the full original design-notes
-  experiment list (E1–E15) plus an ablation study and a penalty-
-  sensitivity sweep (Section 17).
-- Full test suite (16 tests): unit tests for every core module plus a
-  noise-model regression guard.
-- `scripts/run_on_ibm_marrakesh.py`: isolated real-hardware submission
-  script with a pre-submission time-budget check.
-- `scripts/summarize_pqc_benchmark.py`: multi-run mean±std PQC
-  benchmark aggregator.
-
-### Fixed
-- **Noise-model wiring bug** in `qopt/optimization/qaoa_qiskit.py`:
-  `AerSampler()` was constructed with no backend reference, silently
-  ignoring any `NoiseModel` passed to `run_qaoa_aer(...)`. This meant
-  every noise-model-aware test/experiment (including the original
-  "FakeMarrakesh noise" test suite) ran noiselessly regardless of what
-  noise model was supplied. Fixed via `AerSampler.from_backend(backend)`.
-  A regression-guard test
-  (`test_noise_model_actually_changes_sampled_distribution`) was added
-  so this class of bug cannot silently reappear. See `README.md`
-  Errata section for full details and exactly which results were and
-  were not affected.
-- **Matplotlib backend crash on headless Linux/WSL**: several plotting
-  scripts crashed at interpreter exit with `RuntimeError: main thread
-  is not in main loop` because matplotlib auto-selected the interactive
-  `TkAgg` backend whenever Tkinter was importable, even with no display
-  server running. Fixed by forcing `matplotlib.use("Agg")` as the first
-  statement executed on `import qopt` (`qopt/__init__.py`), before any
-  script can import `matplotlib.pyplot`.
-- Qiskit `NLocal`/`BlueprintCircuit` deprecation warnings (upstream,
-  harmless) now suppressed via `[tool.pytest.ini_options]` in
-  `pyproject.toml` so `pytest -v` output stays clean.
+- IBM Quantum hardware results: 16 pre-registered circuits on `ibm_fez` (Heron r2),
+  8192 shots each, 38 billed QPU seconds (`results/hardware/run_qpu_ibm_fez_20261122-114238/`),
+  analysed by `experiments/exp07_hardware_analysis.py`.
+- `experiments/exp08_noise_physics.py`: symmetry-sector survival model, undetected-error
+  fraction, energy distributions on hardware, key-rate physics figure.
+- `exp03_qaoa_in_the_loop.py --transfer-check`: fixed versus instance-trained depth-one
+  angles on 90 held-out instances.
+- `requirements-py310.txt` and a Python 3.10 CI job (results reproduce bit-for-bit).
+- Journal-size figure mode (`QOPT_FIGSCALE`, output in `figures/paper/`).
+- The hardware notebook locates the repository itself, so it runs even when the package
+  was installed in a different environment from the Jupyter kernel.
 
 ### Changed
-- `qopt/pqc/profiles.py::benchmark_live()` extended to measure ML-DSA
-  keygen/sign/verify latency (previously ML-KEM only, with ML-DSA
-  stubbed to literature reference values). Both families now report
-  `source="measured"` when `liboqs-python` is installed and built.
+- README and `docs/RESULTS.md` report the real hardware results; all em dashes and en
+  dashes removed from the repository.
 
-### Known limitations (see `README.md` Section 8 for full list)
-- Path-based (not full flow-conservation) routing QUBO.
-- RL baseline is a minimal tabular Q-learning agent, not PPO.
-- Q-OPT-NET dataset generation at scale (Section 30 of the design
-  notes) is not implemented.
+## [2.0.0]: 2026-11-22
+
+### Changed (breaking)
+- **New coupled formulation** (`qopt/agility/model.py`). The v0.1 QUBO was
+  block-separable (zero inter-request couplings; greedy exact on 100 % of 90 tested
+  instances), which left no combinatorial problem to optimise. v2 couples requests
+  through shared per-link QKD key budgets, per-node PQC CPU and QRNG entropy.
+- **Hybrid risk** now follows the KDF-combiner property, rho_HYB = rho_QKD x rho_PQC.
+- **QKD key rate** uses the Lo-Ma-Chen infinite-decoy GLLP bound by default
+  (`model="simplified"` keeps the v0.1 formula for legacy reproduction).
+
+### Added
+- `qopt/agility/solvers.py`: exact enumeration, rule-based controller, coupled greedy,
+  incremental SA and tabu search.
+- `qopt/agility/twin.py`: multi-epoch digital twin with hard budgets and common random numbers.
+- `qopt/quantum/`: XY-mixer QAOA with W-state preparation and feasibility-compressed
+  cost; exact subspace and full-space simulators; INTERP training; hardware plan,
+  pilots and budget guard; bootstrap metrics and greedy repair.
+- Experiments E1-E7, `docs/METHODS.md`, `docs/HARDWARE_RUN.md`, auto-generated
+  `docs/RESULTS.md`, provenance manifests, 19 new tests.
+- `notebooks/qpu_run.ipynb` (generated by `scripts/make_qpu_notebook.py`).
+
+### Moved
+- v0.1 experiments, figures, tables, the earlier `ibm_marrakesh` job and its scripts
+  to `legacy/v1/`. `qopt/optimization/` is retained only for the E1 comparison.
+
+### Removed
+- Unused dependencies `qiskit-algorithms`, `qiskit-optimization`, `seaborn`, `tqdm`.
+
+## [0.1.0]: 2026-09-10
+Initial release (see `legacy/v1/ERRATA_v0.1.md` for the two bugs fixed in that line).

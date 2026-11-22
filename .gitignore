@@ -77,3 +77,8 @@ results/qaoa_hw_problem_hw_result_*.json
 # --- OS junk ---
 .DS_Store
 desktop.ini
+
+# Never commit credentials or executed notebooks that may contain tokens
+qiskit-ibm.json
+*.token
+notebooks/*-executed.ipynb

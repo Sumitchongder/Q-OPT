@@ -1,7 +1,7 @@
 """
 QRNG resource abstraction (per node): entropy is modeled as a
 leaky-bucket resource identical in structure to the QKD key pool,
-per item 6 / 50 of the design notes -- we do not simulate a physical
+per item 6 / 50 of the design notes, we do not simulate a physical
 QRNG, only its rate/availability/latency envelope.
 """
 from __future__ import annotations

@@ -1,494 +1,247 @@
-# Q-OPT: Quantum-Optimized Crypto-Agility for Attack-Resilient QKD–PQC–QRNG Networks
-
-**A security-constrained QUBO framework for adaptive routing and key management across hybrid quantum-key-distribution (QKD), post-quantum cryptography (PQC), and quantum-random-number-generation (QRNG) networks, solved with QAOA (Qiskit) and benchmarked against exact, MILP, greedy, and simulated-annealing baselines.**
+# Q-OPT v2: Coupled Crypto-Agility for QKD-PQC-QRNG Networks with Constraint-Preserving QAOA
 
 [![CI](https://github.com/Sumitchongder/Q-OPT/actions/workflows/ci.yml/badge.svg)](https://github.com/Sumitchongder/Q-OPT/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()
-[![Qiskit](https://img.shields.io/badge/qiskit-2.x-6929c4)]()
-[![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-16%20passing-brightgreen)]()
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
+![Qiskit](https://img.shields.io/badge/qiskit-2.5-6929c4)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-> **Note:** replace `Sumitchongder/Q-OPT` in the CI badge URL above with your actual
-> GitHub username/repository once pushed (see Section 0 of the setup
-> instructions in this repo's companion setup guide, or just find-and-replace
-> `Sumitchongder/Q-OPT` throughout this file).
+Q-OPT decides, every control epoch, how each service request in a
+quantum-safe network is protected (by **QKD**, **PQC (ML-KEM)** or a
+**hybrid** KDF combination) and over which path, when requests compete for
+finite QKD key material, end-node PQC compute and QRNG entropy, under
+adversarial QBER injection and link denial.
 
-## Table of Contents
+The decision problem is a block-one-hot quadratic program. We solve it
+exactly and heuristically on classical hardware, evaluate it in a
+hard-budget network digital twin, and execute it on IBM Quantum hardware
+with an XY-mixer QAOA that never leaves the feasible subspace, which turns
+the one-hot constraints into a free symmetry check for error detection.
 
-- [Errata](#errata)
-- [1. What this repository is](#1-what-this-repository-is)
-- [2. Repository layout](#2-repository-layout)
-- [3. Installation](#3-installation)
-- [4. Reproducing the results](#4-reproducing-the-results)
-- [5. Running QAOA on real `ibm_marrakesh` hardware](#5-running-qaoa-on-real-ibm_marrakesh-hardware-your-8-minute-budget)
-- [6. Regenerating the PQC benchmark table](#6-regenerating-the-pqc-benchmark-table-with-real-measurements)
-- [7. Design notes / where the equations live](#7-design-notes--where-the-equations-live)
-- [8. Known limitations](#8-known-limitations-be-upfront-about-these-in-your-methods-section)
-- [9. Citation](#9-citation)
-- [10. License](#10-license)
-- [11. Project Governance](#11-project-governance)
+<p align="center"><img src="figures/exp02_twin_sweeps.png" width="92%"></p>
+
+*Digital twin, held-out seeds, 95 % CIs. Coupling-aware control (orange/green)
+versus the v0.1 separable optimiser (blue), a tiered rule-based controller
+and static policies.*
 
 ---
 
-## Errata
-
-Two real bugs were found and fixed during this project's own development
-(a silently-ignored noise model in the QAOA solver, and a matplotlib
-backend crash on headless Linux/WSL) — both are documented in full,
-including exactly which results were and were not affected, in
-**[docs/ERRATA.md](docs/ERRATA.md)**. Read it before citing any
-noise-model result from an early version of this repository.
-
----
-
-## 1. What this repository is
-
-This is the reference implementation accompanying the Q-OPT research program: a
-joint security-constrained optimization of QKD key resources, PQC fallback,
-QRNG entropy, and routing under dynamic attacks and physical-network
-degradation. It formulates the problem as a QUBO, solves it with QAOA on
-Qiskit (validated on `FakeMarrakesh` and runnable on real `ibm_marrakesh`
-hardware), and compares against classical baselines (exact/brute-force,
-MILP, greedy, simulated annealing).
-
-**Companion project:** Q-TRACE (attack-probability estimation from QKD
-telemetry) is not shipped in this repo; `qopt/threat/risk_engine.py`
-exposes `from_q_trace_output()` as the integration point so its output can
-be fed straight into Q-OPT's risk term rho_ij (closes the two-paper loop).
-
-### Honesty notice (please read before citing results)
-
-This repository is a **working, tested reference implementation**, not a
-finished Q1 manuscript's full experimental campaign. Concretely:
-
-- Every module listed below has been executed and its output checked
-  (unit tests, `__main__` self-checks, and the experiment scripts have all
-  been run at least once during development).
-- The QUBO formulation uses **path-selection** (K-shortest candidate paths
-  per request, chosen classically) rather than full edge-indicator flow
-  routing. This is a deliberate, documented reduction (see
-  `qopt/optimization/qubo.py` docstring) -- full flow-conservation routing
-  is combinatorially far beyond what fits in 12 qubits / an 8-minute QPU
-  budget. State this design choice explicitly in your methods section.
-- The QKD channel model is a standard simplified GLLP-type decoy-state BB84
-  rate formula (see `qopt/qkd/channel.py`), used as an **operational
-  resource model**, not a new physical or security result.
-- The PQC resource table defaults to literature-consistent reference
-  figures (`qopt/pqc/profiles.py`); regenerate Table 2 of your paper with
-  `--benchmark` (requires `liboqs-python`) on your target hardware before
-  submission.
-- The included experiments now cover 12 of the 15 original design-notes
-  experiments (E1/E4/E5, E2, E3, E6, E7, E8, E9, E10, E11, E12, E13, E14,
-  E15 -- everything except a full penalty-sensitivity sweep and dataset
-  generation at scale, see Section 8). Each is independently runnable; see
-  Section 4 for the full command list.
-- The RL baseline (Q-learning/PPO) mentioned in the roadmap is **not**
-  implemented in this drop; `qopt/optimization/classical_baselines.py` is
-  the place to add it (its `SolverResult` interface is solver-agnostic).
-
-Run the numbers yourself before trusting them in a submission -- that's the
-entire point of shipping the code.
+## Contents
+1. [What is new in v2](#1-what-is-new-in-v2)
+2. [Key results](#2-key-results)
+3. [Quick start](#3-quick-start)
+4. [Running on IBM Quantum hardware](#4-running-on-ibm-quantum-hardware)
+5. [Reproducing every table and figure](#5-reproducing-every-table-and-figure)
+6. [Repository layout](#6-repository-layout)
+7. [Scope, assumptions and limitations](#7-scope-assumptions-and-limitations)
+8. [Citation, licence, AI-assistance disclosure](#8-citation-licence-ai-assistance-disclosure)
 
 ---
 
-## 2. Repository layout
+## 1. What is new in v2
 
-See also [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for a pipeline
-diagram and the design decisions worth knowing before reading the code.
-
-```
-.github/workflows/ci.yml             CI: runs the full test suite + notebook execution on every push/PR
-.github/ISSUE_TEMPLATE/, PULL_REQUEST_TEMPLATE.md
-CITATION.cff                         Machine-readable citation metadata (GitHub "Cite this repository" button)
-CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, CHANGELOG.md
-Makefile                             make test / make quick / make full / make benchmark-pqc / ...
-qopt/                          Installable Python package (pip install -e .)
-├── network/
-│   ├── topology.py            5 topology generators (A: line, B: ring, C: mesh, D: RGG, E: scale-free)
-│   ├── traffic.py             Service-request sampler (source, dest, demand, security class, latency)
-│   └── simulator.py           Per-timestep scenario simulator (Q-OPT-NET dataset schema)
-├── qkd/
-│   ├── channel.py             Decoy-state BB84 loss/QBER/key-rate model
-│   ├── key_pool.py            Leaky-bucket per-link key pool dynamics
-│   └── attacks.py             5 attack models (QBER injection, PNS, link denial, key exhaustion, control-plane)
-├── pqc/
-│   ├── profiles.py            ML-KEM / ML-DSA resource table (+ optional live liboqs benchmarking)
-│   └── hybrid_kdf.py          HKDF-based hybrid QKD+PQC key combiner
-├── qrng/
-│   └── resource_model.py      QRNG entropy leaky-bucket resource
-├── threat/
-│   └── risk_engine.py         rho_ij risk function + Q-TRACE output adapter
-└── optimization/
-    ├── qubo.py                  Path+mode QUBO builder (objective + one-hot + security-floor penalties)
-    ├── qubo_to_ising.py          Explicit QUBO -> Ising Hamiltonian conversion (Qiskit SparsePauliOp)
-    ├── classical_baselines.py    Exact (brute force), Greedy, Simulated Annealing
-    ├── milp_baseline.py          MILP baseline (scipy.optimize.milp)
-    ├── rl_baseline.py            Minimal tabular Q-learning baseline (E6)
-    └── qaoa_qiskit.py            QAOA solver (Qiskit + Aer), noiseless or with a supplied NoiseModel
-
-experiments/
-├── e1_solver_comparison.py           E1/E4/E5: Exact/Greedy/MILP/SA/QAOA(p=1,2,3) quality & runtime
-├── e2_qber_sweep.py                  E8: crypto-mode selection shift vs channel QBER (QKD -> HYBRID)
-├── e3_attack_intensity.py            E9: availability & security compliance vs attack intensity
-├── e4_pareto_front.py                E12: multi-objective Pareto front (risk vs. latency)
-├── e5_topology_generalization.py     E13: solver behavior across topologies A (5 nodes) -> E (20 nodes)
-├── e6_ablation.py                    Ablation study (Section 40): contribution of each QUBO term
-├── e7_qaoa_depth_and_exact_validation.py
-│                                     E2: exact validation at n=3,6,9 qubits
-│                                     E3: QAOA depth sweep p=1-4 with Mann-Whitney U tests
-├── e8_qtrace_closed_loop.py          E14 (flagship): simulated Q-TRACE -> Q-OPT closed loop
-├── e9_qaoa_vs_rl.py                  E6: QAOA vs. a tabular Q-learning baseline
-├── e10_depletion_failure_scarcity_noise.py
-│                                     E7 (key depletion), E10 (link failure/rerouting),
-│                                     E11 (QRNG scarcity), E15 (noise-aware QAOA sweep) -- run any
-│                                     of the four independently via --only {e7,e10,e11,e15}
-├── e12_penalty_sensitivity.py        Section 17: penalty-sensitivity sweep (one-hot + security floor)
-└── e_hw_prepare_marrakesh_job.py    FREE: builds + optimizes a QAOA job for real hardware (Aer only)
-
-scripts/
-└── run_on_ibm_marrakesh.py          ISOLATED, spends real ibm_marrakesh QPU time -- run manually only
-
-tests/
-├── test_core.py                     11 fast unit tests (topology, channel, QUBO<->Ising, solvers, ...)
-└── test_qaoa_fake_marrakesh.py      QAOA validated against the real FakeMarrakesh noise model (0 QPU time)
-
-figures/, tables/, results/          Generated outputs (gitignored; regenerate, don't commit)
-docs/experiment_specs.md             Equations/spec for the not-yet-scripted experiments
-docs/ARCHITECTURE.md                 Pipeline diagram and key design decisions
-docs/ERRATA.md                       Full detail on the two documented bugs and their fixes
-pyproject.toml, requirements.txt     Packaging + pinned dependencies
-```
-
----
-
-## 3. Installation
-
-```bash
-conda create -n qgss python=3.11 -y
-conda activate qgss
-
-git clone https://github.com/Sumitchongder/Q-OPT.git qopt
-cd qopt
-pip install -r requirements.txt
-pip install -e .          # makes `import qopt` work from anywhere, incl. Jupyter
-```
-
-Or, once cloned: `make install` does the same two `pip install` steps.
-
-Verify the install:
-
-```bash
-python -m pytest tests/ -v          # or: make test
-```
-
-Expected: **16 passed**, zero warnings.
-
----
-
-## 4. Reproducing the results
-
-Every experiment script is deterministic given its `--n-seeds`/topology
-arguments (all randomness flows through explicit `numpy.random.default_rng`
-seeds -- no hidden global RNG state). Figures are written as both `.pdf`
-(vector, for LaTeX) and `.png` (raster, for quick viewing).
-
-```bash
-# Module self-checks (fast, no pytest needed) -- good smoke test after any edit
-python -m qopt.network.topology
-python -m qopt.qkd.channel
-python -m qopt.pqc.hybrid_kdf
-python -m qopt.threat.risk_engine
-python -m qopt.optimization.qubo
-python -m qopt.optimization.qubo_to_ising
-python -m qopt.optimization.classical_baselines
-python -m qopt.optimization.milp_baseline
-python -m qopt.optimization.qaoa_qiskit
-python -m qopt.optimization.rl_baseline
-
-# Full unit + fake-hardware test suite (includes a noise-model regression guard)
-python -m pytest tests/ -v
-
-# Experiment 1 (E1/E4/E5): solver comparison
-python experiments/e1_solver_comparison.py --n-seeds 30 --n-requests 2 --k-paths 2 --topology A
-
-# Experiment 2 (E8): QBER sweep / crypto-mode selection
-python experiments/e2_qber_sweep.py --n-seeds 25 --n-requests 4 --topology B
-
-# Experiment 3 (E9): attack-intensity sweep / resilience
-python experiments/e3_attack_intensity.py --n-seeds 25 --n-requests 4 --topology C
-
-# Experiment 4 (E12): Pareto front (risk vs. latency)
-python experiments/e4_pareto_front.py --n-seeds 15 --n-requests 4 --topology B
-
-# Experiment 5 (E13): topology generalization A (5 nodes) -> E (20 nodes)
-python experiments/e5_topology_generalization.py --n-seeds 10 --n-requests 2 --k-paths 2
-
-# Experiment 6: ablation study (Section 40) -- which QUBO term matters most
-python experiments/e6_ablation.py --n-seeds 20 --n-requests 4 --topology C
-
-# Experiment 7, Part A (E2): exact validation at n=3,6,9 qubits
-python experiments/e7_qaoa_depth_and_exact_validation.py --n-seeds 15 --skip-part-b
-
-# Experiment 7, Part B (E3): QAOA depth sweep p=1-4 with Mann-Whitney U tests
-python experiments/e7_qaoa_depth_and_exact_validation.py --n-seeds 15 --skip-part-a \
-    --n-requests 2 --k-paths 2 --topology B
-
-# Experiment 8 (E14, flagship): simulated Q-TRACE -> Q-OPT closed loop
-python experiments/e8_qtrace_closed_loop.py --n-seeds 15 --n-requests 4 --topology C
-
-# Experiment 9 (E6): QAOA vs. RL (Q-learning) vs. classical baselines
-python experiments/e9_qaoa_vs_rl.py --n-seeds 15 --n-requests 3 --n-episodes 400
-
-# Experiment 10: four lighter experiments, run independently or all at once
-python experiments/e10_depletion_failure_scarcity_noise.py --only e7  --n-seeds 10 --n-requests 3 --topology C
-python experiments/e10_depletion_failure_scarcity_noise.py --only e10 --n-seeds 10 --n-requests 3 --topology C
-python experiments/e10_depletion_failure_scarcity_noise.py --only e11 --n-seeds 10 --n-requests 3 --topology C
-python experiments/e10_depletion_failure_scarcity_noise.py --only e15 --n-seeds 10 --n-requests 2 --k-paths 2 --topology A
-
-# Experiment 11 (Section 17): penalty-sensitivity sweep
-python experiments/e12_penalty_sensitivity.py --n-seeds 15 --n-requests 3 --k-paths 1 --topology A
-```
-
-Outputs land in `tables/*.csv` and `figures/*.{pdf,png}`. The full list of
-files each script produces is in the table at the end of this section.
-
-Increase `--n-seeds` for the final paper run (30+ recommended); the values
-above are chosen to finish in reasonable time on a laptop for iteration.
-Note: after the noise-model bugfix (see Errata), E15 and the FakeMarrakesh
-tests genuinely simulate device noise now, which is much slower than before
-the fix -- budget a few minutes for `--only e15` alone, and note that
-`bash run_all.sh` may need to run E15 in a separate invocation if your
-environment has a wall-clock limit on a single command (see `run_all.sh`
-itself, which runs everything else first).
-
-### What each script produces
-
-| Script | Figures | Tables |
+| | v0.1 | v2 |
 |---|---|---|
-| `e1_solver_comparison.py` | `solver_comparison_objective`, `solver_comparison_runtime` | `solver_comparison(.csv, _summary.csv)` |
-| `e2_qber_sweep.py` | `e2_qber_mode_selection` | `e2_qber_sweep.csv`, `e2_qber_mode_mix.csv` |
-| `e3_attack_intensity.py` | `e3_attack_intensity` | `e3_attack_intensity(.csv, _summary.csv)` |
-| `e4_pareto_front.py` | `e4_pareto_front` | `e4_pareto_grid.csv`, `e4_pareto_front.csv` |
-| `e5_topology_generalization.py` | `e5_topology_generalization` | `e5_topology_generalization(.csv, _summary.csv)` |
-| `e6_ablation.py` | `e6_ablation` | `e6_ablation(.csv, _summary.csv)` |
-| `e7_..._validation.py` (Part A) | `e7a_exact_validation` | `e7a_exact_validation.csv` |
-| `e7_..._validation.py` (Part B) | `e7b_depth_sweep` | `e7b_depth_sweep.csv`, `e7b_depth_sweep_mannwhitney.csv` |
-| `e8_qtrace_closed_loop.py` | `e8_qtrace_closed_loop` | `e8_qtrace_closed_loop(.csv, _summary.csv)` |
-| `e9_qaoa_vs_rl.py` | `e9_qaoa_vs_rl` | `e9_qaoa_vs_rl.csv` |
-| `e10_..._noise.py --only e7` | `e7_key_depletion` | `e7_key_depletion.csv` |
-| `e10_..._noise.py --only e10` | `e10_link_failure` | `e10_link_failure.csv` |
-| `e10_..._noise.py --only e11` | `e11_qrng_scarcity` | `e11_qrng_scarcity.csv` |
-| `e10_..._noise.py --only e15` | `e15_noise_sweep` | `e15_noise_sweep.csv` |
-| `e12_penalty_sensitivity.py` | `e12_penalty_sensitivity` | `e12_penalty_sensitivity_onehot.csv`, `e12_penalty_sensitivity_security.csv` |
+| Inter-request coupling | none; the QUBO was block-separable, so greedy was provably exact | shared per-link QKD key budgets, per-node PQC CPU and QRNG entropy (convex quadratic congestion) |
+| Hybrid risk | heuristic 0.85 × QKD risk | combiner property: ρ_HYB = ρ_QKD · ρ_PQC (secure if either input is secret) |
+| QKD key rate | simplified pedagogical formula | Lo-Ma-Chen infinite-decoy GLLP bound, aborts above the decoy-state QBER threshold |
+| Evaluation | objective value only | multi-epoch digital twin with **hard** budgets, Markov attacks, link denial, common random numbers |
+| Quantum ansatz | penalty QAOA, X mixer | block XY-mixer QAOA with W-state preparation; feasibility-compressed cost Hamiltonian |
+| Hardware protocol | one circuit, best-of-2000 samples on a 64-state problem | 16 pre-registered circuits, W-state and penalty controls, symmetry verification, bootstrap CIs, budget-guarded pilots |
 
----
+The full derivation is in [`docs/METHODS.md`](docs/METHODS.md). Why the
+change was necessary is quantified by experiment E1 below.
 
-## 5. Running QAOA on real `ibm_marrakesh` hardware (your 8-minute budget)
+## 2. Key results
 
-**Nothing above touches real quantum hardware.** All QAOA results in
-Experiments 1-3 and in the test suite run on `qiskit-aer`, optionally with
-the real device's calibrated noise model via
-`qiskit_ibm_runtime.fake_provider.FakeMarrakesh` -- this is free, unlimited,
-and is what you should use for all development and debugging.
+All numbers below are regenerated from `tables/` by
+`scripts/summarize_results.py` into [`docs/RESULTS.md`](docs/RESULTS.md).
 
-When you're ready to spend real QPU time, follow these steps **exactly**:
+**E1: The v0.1 problem was trivial; the v2 problem is not.** Across 90
+v0.1 instances the QUBO contained **0** inter-request couplings, and
+per-request greedy matched the exact optimum in **100 %** of cases. In the
+v2 coupled model, coupled greedy reaches the optimum in 87.5 % of instances
+at R = 3, falling to 57.5 % at R = 7; the v0.1 separable rule reaches it in
+≤ 2.5 %.
 
-### Step 1 -- Save your IBM credentials (once)
+**E2: Coupling-awareness is what matters at network level.** Attack
+intensity 0.6, load 1.5, 12 held-out seeds × 40 epochs:
 
-In a Jupyter cell or Python shell:
+| Policy | Compliance | Critical-class compliance | Key-exhaustion downgrades | Exp. compromises / 1k |
+|---|---|---|---|---|
+| **Q-OPT v2 (exact)** | **0.939** [0.922, 0.955] | **0.827** [0.779, 0.873] | **2.3 %** [1.5, 3.3] | 4.89 [4.01, 5.81] |
+| Coupled greedy | 0.933 [0.913, 0.952] | 0.819 [0.769, 0.870] | 2.8 % [1.7, 4.1] | 4.83 [4.00, 5.72] |
+| Separable (v0.1) | 0.862 [0.828, 0.894] | 0.732 [0.658, 0.800] | 21.5 % [15.6, 27.0] | 7.02 [5.49, 8.50] |
+| Rule-based (tiered) | 0.729 [0.688, 0.771] | 0.374 [0.302, 0.450] | 0.0 % | 18.47 [14.23, 23.01] |
+| Static-HYB | 0.700 [0.669, 0.730] | 0.273 [0.224, 0.328] | 23.1 % | 11.97 [10.69, 13.18] |
+
+Q-OPT v2 versus every baseline: paired Wilcoxon, Holm-corrected, p < 0.01
+(p = 0.023 versus coupled greedy). The advantage over v0.1 grows with load
+(0.858 vs 0.778 compliance at load 3). **The gain comes from the coupled
+formulation; exact optimisation adds a small, statistically detectable
+improvement over coupled greedy.**
+
+**E3: XY-QAOA as the in-loop controller.** With p = 1 angles transferred
+from development instances (no training at run time), XY-QAOA matches the
+control quality of uniform feasible sampling with roughly 2-4 × fewer shots
+per epoch (mean objective 4.29 with 16 shots vs 4.50 for random with 32;
+exact control: 4.03).
+
+**E4: Constraint preservation beats penalties by a wide margin.**
+Noiseless, 20 held-out instances per family, 6-12 qubits: XY-QAOA p = 1
+reaches an effective approximation ratio of 0.93-0.95 with 100 % feasible
+samples. Penalty QAOA reaches 0.18-0.28 at p = 1 and 0.34-0.49 at p = 2,
+*even with a per-instance oracle-tuned penalty*.
+
+**E6: Resources and honest scaling.** The feasibility compression removes
+20-32 % of cost-Hamiltonian ZZ terms at 9-24 qubits, i.e. 9-22 % fewer CZ
+gates after heavy-hex routing.
+Classical simulated annealing reaches the best-found solution up to R = 30
+in under 0.5 s; **we do not claim a quantum speed-up**; the quantum
+contribution is a feasible-by-construction solver with a built-in error
+detection mechanism, validated on hardware.
+
+**E7: IBM Quantum hardware (ibm_fez, Heron r2, 16 circuits x 8 192 shots,
+38 billed QPU seconds).** XY-QAOA p = 1 reaches r = 0.887-0.966 after
+symmetry verification, within 0.007-0.018 of its noiseless value and
+0.23-0.37 above the uniform-feasible floor on every instance. Its effective
+ratio exceeds penalty QAOA by 0.31-0.49 on every instance (one-sided
+bootstrap p <= 0.001 for all eight pre-registered tests). Raw feasibility is
+0.46-0.66 for XY p = 1 against 0.15-0.26 for penalty QAOA; XY p = 2 loses
+roughly half of its feasible shots to depth.
+
+**E8: Why hardware is worse than the emulation.** A calibrated two-qubit
+depolarising model predicts the emulated sector survival almost exactly
+(fitted kappa_eff = 1.1 vs 12/15 from theory), but ibm_fez breaks the
+symmetry sector 3.5 times faster per CZ (kappa_eff = 4.5). T1 decay of the
+single excitation per block during the circuit explains about one third of
+the excess; the remainder is attributed to effects outside the calibration
+snapshot (crosstalk, leakage, drift). Undetected errors grow with depth
+(q = 0.05 at p = 1, 0.15 at p = 2).
+
+<p align="center"><img src="figures/exp07_run_qpu_ibm_fez_20261122-114238.png" width="92%"></p>
+
+<p align="center"><img src="figures/exp04_ansatz.png" width="92%"></p>
+
+## 3. Quick start
+
+```bash
+conda create -n qopt python=3.12 -y && conda activate qopt
+git clone https://github.com/Sumitchongder/Q-OPT.git && cd Q-OPT
+pip install -r requirements.txt && pip install -e . --no-deps   # Python 3.12 (exact pins)
+# Python 3.10: pip install -r requirements-py310.txt && pip install -e . --no-deps
+python -m pytest tests/ -q            # 31 tests, ~2 s
+```
 
 ```python
-from qiskit_ibm_runtime import QiskitRuntimeService
+from qopt.agility.model import random_instance
+from qopt.agility.solvers import solve_exact, solve_greedy
+from qopt.quantum.fastsim import XYQAOASim
+from qopt.quantum.train import train_depth_sweep, metrics_from_feasible_dist
 
-QiskitRuntimeService.save_account(
-    token="my_api_key",
-    instance="my_crn",
-    overwrite=True,
-    set_as_default=True,
-)
-
-service = QiskitRuntimeService()
-backends = service.backends()
-print(f"Account OK. {len(backends)} backend(s) available:")
-for b in backends[:5]:
-    print(f"  {b.name} ({b.num_qubits} qubits)")
+prob = random_instance("C", n_requests=4, k_paths=1, seed=7, load=1.5)   # 12 qubits, 81 feasible
+print(solve_exact(prob).energy, solve_greedy(prob).energy)
+sim = XYQAOASim(prob)
+x = train_depth_sweep(sim.expectation, p_max=2)[2][0]
+print(metrics_from_feasible_dist(sim.E, sim.probs(x), 1.0))
 ```
 
-### Step 2 -- Prepare the job for FREE (Aer only, no QPU time spent)
+## 4. Running on IBM Quantum hardware
+
+Everything that costs QPU time lives in **one notebook**,
+[`notebooks/qpu_run.ipynb`](notebooks/qpu_run.ipynb). Step-by-step
+instructions, the budget logic and what to send back are in
+[`docs/HARDWARE_RUN.md`](docs/HARDWARE_RUN.md). In short:
+
+1. Run the notebook once with `USE_FAKE_BACKEND = True` (free rehearsal).
+2. Save credentials once, set `USE_FAKE_BACKEND = False`, `BUDGET_SECONDS`.
+3. Two pilot jobs (≈ 5 s) measure billed time; the main job's shots are
+   scaled so the prediction stays under 75 % of the remaining budget.
+4. Review the prediction, set `CONFIRM_SUBMIT = True`, run the cell.
+5. `python experiments/exp07_hardware_analysis.py --run-dir results/hardware/run_qpu_<...>`
+   then `python scripts/summarize_results.py`.
+
+Expected cost of the full plan: ≈ 1-1.5 min of QPU time for 16 × 8 192 shots
+(pessimistic estimate), leaving margin within an 8-minute allocation.
+
+## 5. Reproducing every table and figure
 
 ```bash
-python experiments/e_hw_prepare_marrakesh_job.py \
-    --topology A --n-requests 2 --k-paths 2 --reps 1 \
-    --use-marrakesh-noise
+bash run_all.sh          # E1-E8 (hardware analysis uses the archived QPU counts), ~25 min on one core
+make results             # re-render docs/RESULTS.md
 ```
 
-This builds a small (roughly 6-8 qubit) QUBO, converts it to Ising form, and
-runs the **entire COBYLA parameter-optimization loop** against Aer with the
-`FakeMarrakesh` noise model baked in -- so the angles you submit to real
-hardware are already noise-adapted. It writes:
+| Experiment | Script | Main outputs |
+|---|---|---|
+| E1 coupling structure | `exp01_coupling_structure.py` | `exp01_*` |
+| E2 digital twin (headline) | `exp02_digital_twin.py` | `exp02_twin_*`, `exp02_trace` |
+| E3 QAOA in the loop | `exp03_qaoa_in_the_loop.py` | `exp03_*` |
+| E4 XY vs penalty QAOA | `exp04_ansatz_comparison.py` | `exp04_*` |
+| E6 scaling & resources | `exp06_scaling_resources.py` | `exp06_*` |
+| E7 hardware analysis | `exp07_hardware_analysis.py` | `exp07_<run>*` |
+| E8 noise physics of the hardware run | `exp08_noise_physics.py` | `exp08_*` |
 
-- `results/qaoa_hw_problem.json`
-- `results/qaoa_hw_optimal_params.json`
+Every script is deterministic (explicit seeds, common random numbers in the
+twin), writes CSVs to `tables/`, vector + raster figures to `figures/`, and a
+provenance manifest (arguments, versions, git commit, runtime) to
+`results/manifest/`. Evaluation seeds are disjoint from the seeds used
+during development.
 
-### Step 3 -- Dry-run the time estimate (still free)
+## 6. Repository layout
 
-```bash
-python scripts/run_on_ibm_marrakesh.py \
-    --problem-json results/qaoa_hw_problem.json \
-    --params-json  results/qaoa_hw_optimal_params.json \
-    --reps 1 --shots 2000 --dry-run
+```
+qopt/
+  agility/   model.py    coupled block-one-hot model (risk, SLA, shared budgets)
+             solvers.py  exact, separable (v0.1), rule-based, greedy, SA, tabu
+             twin.py     multi-epoch digital twin with hard budgets
+  quantum/   circuits.py XY-QAOA / penalty QAOA / W-state circuits (Qiskit)
+             fastsim.py  exact subspace (XY) and full-space (penalty) simulators
+             train.py    INTERP angle training, metrics, repair, bootstrap
+             hardware.py plan building, transpilation, pilots, budget guard
+  qkd/ pqc/ qrng/ threat/ network/   physical and resource models
+  optimization/                      v0.1 separable QUBO (legacy comparison only)
+experiments/   exp01-exp07 + _common.py (provenance, statistics, styling)
+notebooks/     qpu_run.ipynb (generated by scripts/make_qpu_notebook.py)
+results/       hardware/plan (plan.json, circuits.qpy), hardware/run_*, manifest/
+docs/          METHODS.md, HARDWARE_RUN.md, RESULTS.md, ARCHITECTURE.md, ERRATA.md
+legacy/v1/     v0.1 experiments, figures, tables and the earlier ibm_marrakesh job
+tests/         test_v2.py (model, solvers, Qiskit equivalence, symmetry, budget guard)
+               test_legacy_v01.py
 ```
 
-This authenticates, fetches the real `ibm_marrakesh` backend's calibration
-data, transpiles the actual circuit you would submit, and prints an
-estimated execution time. **It refuses to proceed to Step 4 if the estimate
-exceeds a hard-coded, safety-margined 8-minute budget.**
+## 7. Scope, assumptions and limitations
 
-### Step 4 -- Submit for real (spends QPU time -- run deliberately)
+- **No quantum advantage is claimed.** At the sizes executable today the
+  coupled problem is solved exactly or near-exactly by classical heuristics
+  in milliseconds (E6). The hardware experiment validates a
+  feasible-by-construction quantum solver and its error-detection property;
+  the network-level gains (E2) come from the formulation and are solver
+  agnostic.
+- **Hardware instances are small and pre-registered** (R = 3-4, 9-12 qubits,
+  sparse coupling; selection rule in `qopt/quantum/hardware.py`). On all
+  four, coupled greedy is also optimal. Angles are trained noiselessly and
+  transferred; there is no on-hardware optimisation loop.
+- **Risk numbers are model outputs.** Link compromise probabilities are a
+  documented proxy (attack probability × undetected fraction + control-plane
+  trust), the PQC break probability ρ_PQC is a scenario parameter, and the
+  hybrid product rule assumes independent failures.
+- **The quadratic congestion term is a surrogate**; the twin enforces hard
+  budgets, so surrogate and metric can disagree (visible as greedy slightly
+  beating exact on the per-epoch objective in E3, because pool trajectories
+  diverge between policies).
+- **Key rates are asymptotic** (no finite-key corrections); the
+  `key_rate_scale` parameter absorbs system efficiency, duty cycle and
+  finite-size overhead.
+- **PQC costs** use reference figures unless `liboqs-python` benchmarking is
+  run (`python -m qopt.pqc.profiles --benchmark`).
 
-```bash
-python scripts/run_on_ibm_marrakesh.py \
-    --problem-json results/qaoa_hw_problem.json \
-    --params-json  results/qaoa_hw_optimal_params.json \
-    --reps 1 --shots 2000
-```
+## 8. Citation, licence, AI-assistance disclosure
 
-This submits **exactly one circuit** (the QAOA ansatz at your pre-optimized
-angles) as a single `SamplerV2` job -- no on-hardware optimization loop, by
-design, since that would burn your budget fast. Results are saved to
-`results/qaoa_hw_problem_hw_result.json` and printed, including the
-hardware-vs-Aer energy gap (report this as your "hardware validation" row).
+See [`CITATION.cff`](CITATION.cff). Licence: MIT.
 
-If you want results at `p=2` or `p=3` too, repeat Steps 2-4 with
-`--reps 2` / `--reps 3`, watching your remaining allocation between runs.
-**Do not** script a loop over `p` that calls Step 4 automatically.
-
----
-
-## 6. Regenerating the PQC benchmark table with real measurements
-
-The shipped `qopt/pqc/profiles.py::REFERENCE_PROFILES` are literature-scale
-placeholder figures. For a submission-grade table:
-
-```bash
-pip install liboqs-python
-python -m qopt.pqc.profiles --benchmark
-```
-
-This measures real ML-KEM keygen/encapsulation/decapsulation latency AND
-real ML-DSA keygen/sign/verify latency on your machine (both algorithm
-families are fully measured as of this version -- confirmed stable across
-n_iters=200 vs n_iters=2000 runs, varying by <20%, consistent with genuine
-sub-millisecond timing noise rather than measurement instability). If
-`liboqs-python` needs to compile liboqs from source on your machine and
-fails with `cmake: not found`, install build tools first:
-
-```bash
-conda install -c conda-forge cmake ninja gxx_linux-64 gcc_linux-64 -y
-```
-
-For the ML-DSA numbers, note the schema reuses the KEM field names for
-convenience: `encapsulation_latency_ms` holds the **sign** latency and
-`decapsulation_latency_ms` holds the **verify** latency for signature
-algorithms (documented in `qopt/pqc/profiles.py`, not a bug). State this
-explicitly in your Table 2 caption to avoid confusing a reviewer.
-
----
-
-## 7. Design notes / where the equations live
-
-- **QUBO objective** (risk, latency, key-pool depletion, compute cost,
-  service disruption): `qopt/optimization/qubo.py::build_qubo`, weights in
-  `DEFAULT_WEIGHTS`. A **penalty-sensitivity sweep** is one line to add:
-  loop `penalty_onehot`/`penalty_security` over `{1,5,10,25,50,100} *
-  obj_scale` and re-solve.
-- **QUBO -> Ising**: `qopt/optimization/qubo_to_ising.py`, unit-tested exact
-  on all 2^n bitstrings for random instances up to n=5.
-- **QAOA ansatz**: `qopt/optimization/qaoa_qiskit.py::build_qaoa_circuit`,
-  uses `qiskit.circuit.library.QAOAAnsatz`, COBYLA outer loop.
-- **Hybrid key combiner**: `qopt/pqc/hybrid_kdf.py`, HKDF-based dual-PRF
-  combiner (K_H = HKDF(KDF(K_QKD) concat KDF(K_PQC), ctx)).
-- **Attack models**: `qopt/qkd/attacks.py`, five categories (QBER
-  injection, PNS degradation, link denial, key exhaustion, control-plane
-  compromise).
-
-See `docs/experiment_specs.md` for the equations and expected
-figures/tables for every experiment in the original design, including the
-ones not yet scripted.
-
----
-
-## 8. Known limitations (be upfront about these in your methods section)
-
-1. Path-based (not full flow-conservation) routing QUBO -- documented above.
-   A structural consequence (found while building E13): the qubit count in
-   this formulation is driven by traffic (n_requests x k_paths x 3 modes),
-   NOT by network size -- a 20-node network and a 5-node network can need
-   the exact same number of qubits if traffic volume is held fixed. Report
-   this explicitly if you claim "generalization to larger networks."
-2. The RL baseline (`qopt/optimization/rl_baseline.py`) is a minimal
-   tabular Q-learning agent treating each request as an independent
-   contextual bandit -- not a sophisticated deep-RL (PPO) agent. Treat E6
-   results as a floor, not a ceiling, for what RL can achieve here.
-3. PQC/QRNG are resource abstractions (rate/latency/availability), not
-   physical simulations -- intentional, per the design spec.
-4. `qopt/network/simulator.py`'s default parameters (key-pool capacity vs.
-   generation rate) saturate pools quickly in the demo config -- tune
-   `pool_capacity_bits` relative to `key_generation_rate_bps` for your
-   target link lengths before using it for a depletion-focused experiment.
-   (Experiment 10's `--only e7` works around this by sweeping
-   `key_pool_frac` directly rather than through the dynamical simulator.)
-5. n_qubits in {4, 5} are structurally UNREACHABLE in the path+mode QUBO
-   formulation (every candidate path always contributes exactly 3
-   mode-options, so n_qubits is always a multiple of 3) -- found while
-   building Experiment 7 Part A; validated at n=3,6,9 instead.
-6. See the Errata section at the top of this file for a real noise-model
-   wiring bug found and fixed during development, and exactly which
-   results it did and didn't affect.
-7. Not yet done: Q-OPT-NET dataset generation at scale (Section 30). This
-   is a straightforward extension of `qopt/network/simulator.py` but has
-   not been run and verified here. (The penalty-sensitivity sweep, Section
-   17, item formerly listed here, is now done -- see
-   `experiments/e12_penalty_sensitivity.py`. It found a clean, sharp
-   feasibility transition: the global QUBO minimum is one-hot-INFEASIBLE
-   60% of the time at penalty P=0.5, but perfectly feasible (0 violations)
-   for every P>=1 tested up to P=100 -- a wide, comfortable safety margin
-   around the repo's actual default penalty magnitudes.)
-8. PQC benchmark table (`qopt/pqc/profiles.py`) still defaults to
-   literature reference figures pending `liboqs-python` on your machine
-   (Section 6).
-
----
-
-## 9. Citation
-
-This repository includes a [`CITATION.cff`](CITATION.cff) file — on GitHub,
-use the **"Cite this repository"** button in the sidebar to get a
-formatted citation, or use the BibTeX below directly (fill in your name
-and repository URL in both places):
-
-```bibtex
-@misc{qopt2026,
-  title  = {Q-OPT: Quantum-Optimized Crypto-Agility for Attack-Resilient QKD-PQC-QRNG Networks},
-  author = {<your name>},
-  year   = {2026},
-  note   = {Code: https://github.com/Sumitchongder/Q-OPT},
-  url    = {https://github.com/Sumitchongder/Q-OPT}
-}
-```
-
-## 10. License
-
-MIT -- see [`LICENSE`](LICENSE).
-
-## 11. Project Governance
-
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) -- how to propose changes, coding
-  conventions, and how to add a new experiment script.
-- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) -- community standards
-  (Contributor Covenant v2.1).
-- [`SECURITY.md`](SECURITY.md) -- how to report a security issue,
-  including this project's stance on credentials (never committed;
-  see also [`docs/ERRATA.md`](docs/ERRATA.md)).
-- [`CHANGELOG.md`](CHANGELOG.md) -- notable changes, including both
-  documented bug fixes.
+**AI assistance.** Parts of the v2 code, experiments and documentation were
+developed with the assistance of an AI model (Anthropic Claude). All design
+decisions, results and claims were reviewed by the authors, every number is
+regenerated from code in this repository, and the authors take full
+responsibility for the work. Journal submissions derived from this
+repository must carry an equivalent disclosure, as required by IEEE and
+Springer Nature policy.

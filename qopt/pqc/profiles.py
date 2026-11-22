@@ -10,11 +10,11 @@ sizes) and NIST security category, exactly as the optimizer needs.
 
 Two ways to populate this table:
 
-1. `benchmark_live()` -- if the optional `liboqs-python` /
+1. `benchmark_live()`, if the optional `liboqs-python` /
    `cryptography` (>=42, which ships ML-KEM support) package is
    installed, this measures real keygen/encaps/decaps/sign/verify
    timings on the local machine and returns a fresh profile table.
-2. `REFERENCE_PROFILES` -- a fallback table populated with
+2. `REFERENCE_PROFILES`, a fallback table populated with
    order-of-magnitude figures consistent with published NIST PQC
    round-3/round-4 benchmarking reports (e.g. Kannwischer et al.,
    pqm4/PQClean benchmarking suites; Open Quantum Safe project
@@ -64,7 +64,7 @@ def benchmark_live(n_iters: int = 200) -> dict[str, PQCProfile]:
     (keygen/sign/verify) on the local machine using `liboqs-python`, if
     installed and its underlying C library successfully built. Falls
     back to REFERENCE_PROFILES with a printed warning if liboqs is not
-    available -- this keeps the pipeline runnable out-of-the-box while
+    available, this keeps the pipeline runnable out-of-the-box while
     still giving you a one-line upgrade path for the real paper.
 
     For ML-DSA, the schema's KEM-shaped field names are reused for
@@ -79,7 +79,7 @@ def benchmark_live(n_iters: int = 200) -> dict[str, PQCProfile]:
         oqs = None
 
     if oqs is None:
-        print("[pqc.profiles] liboqs-python not installed -- using REFERENCE_PROFILES. "
+        print("[pqc.profiles] liboqs-python not installed, using REFERENCE_PROFILES. "
               "For Q1-grade Table 2, `pip install liboqs-python` and rerun "
               "`python -m qopt.pqc.profiles --benchmark`.")
         return REFERENCE_PROFILES

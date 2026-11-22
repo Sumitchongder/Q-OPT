@@ -1,15 +1,14 @@
 ---
 name: Feature request / new experiment
-about: Suggest an addition — e.g. one of the not-yet-implemented experiments in docs/experiment_specs.md
+about: Suggest an addition, e.g. an item from the limitations section of README.md
 title: "[FEATURE] "
 labels: enhancement
 assignees: ""
 ---
 
 **What would you like to add?**
-A clear description. If this is one of the experiments listed as
-not-yet-implemented in `docs/experiment_specs.md`, please reference it
-(e.g. "full dataset generation at scale, Section 30").
+A clear description. If it addresses an item in README.md §7
+(scope, assumptions and limitations), please reference it.
 
 **Why is this useful?**
 What does it let you (or a reader of the eventual paper) do that isn't

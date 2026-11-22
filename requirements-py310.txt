@@ -1,0 +1,13 @@
+# For Python 3.10 environments (numpy >= 2.3 requires Python >= 3.11).
+# Verified: full test suite passes and the hardware plan, digital twin and
+# QAOA results reproduce bit-for-bit against the Python 3.12 pins.
+numpy==2.2.6
+scipy==1.15.3
+pandas==2.3.3
+networkx==3.4.2
+matplotlib==3.10.9
+tabulate==0.10.0
+qiskit==2.5.2
+qiskit-aer==0.17.2
+qiskit-ibm-runtime==0.49.0
+pytest>=8.0

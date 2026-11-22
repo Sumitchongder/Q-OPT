@@ -1,6 +1,6 @@
 """
-Q-OPT: Quantum-Optimized Crypto-Agility for Attack-Resilient QKD-PQC-QRNG Networks
-====================================================================================
+Q-OPT v2: Coupled Crypto-Agility for QKD-PQC-QRNG Networks
+==========================================================
 
 Top-level package. See README.md at the repository root for the full
 project description, roadmap and reproducibility instructions.
@@ -12,7 +12,10 @@ qkd            QKD channel physics (QBER, loss, key rate), key pools, attacks
 pqc            NIST ML-KEM / ML-DSA resource profiles (benchmarked, not re-implemented)
 qrng           QRNG resource abstraction
 threat         Risk engine (Q-TRACE-style threat probability -> rho_ij)
-optimization   QUBO builder, MILP / SA / greedy / RL baselines, QAOA (Qiskit)
+agility        v2 coupled block-one-hot model, classical solvers, digital twin
+quantum        constraint-preserving XY-QAOA: circuits, exact simulators, training,
+               hardware plan and budget-guarded execution
+optimization   v0.1 separable QUBO (kept for the legacy comparison in E1)
 """
 
 # --- Force a non-interactive matplotlib backend BEFORE anything else in this
@@ -27,8 +30,8 @@ optimization   QUBO builder, MILP / SA / greedy / RL baselines, QAOA (Qiskit)
 # terminal session with no display server actually running a Tk main loop.
 # Every experiment script imports a `qopt.*` module before it ever imports
 # matplotlib.pyplot (matplotlib is only imported lazily inside each script's
-# _plot()/_make_figures() function), so setting the backend here -- the
-# first line of code that runs anywhere in this package -- guarantees
+# _plot()/_make_figures() function), so setting the backend here, the
+# first line of code that runs anywhere in this package, guarantees
 # matplotlib.pyplot is never imported anywhere in this codebase before the
 # backend is pinned to the safe, non-interactive "Agg" renderer. Agg still
 # writes .png/.pdf files perfectly; it just never opens a GUI window, which
@@ -40,7 +43,7 @@ matplotlib.use("Agg")
 #
 # QAOAAnsatz (qiskit.circuit.library) internally builds on NLocal/
 # BlueprintCircuit, both deprecated as of Qiskit 2.1 for removal in Qiskit
-# 3.0. This is entirely inside Qiskit's own implementation -- nothing in
+# 3.0. This is entirely inside Qiskit's own implementation, nothing in
 # this repository calls NLocal or BlueprintCircuit directly, so there is
 # no local code change that removes the warning; it will disappear on its
 # own once Qiskit ships a non-deprecated QAOAAnsatz internals or this repo
@@ -53,4 +56,4 @@ warnings.filterwarnings(
     message=r".*NLocal.*deprecated.*|.*BlueprintCircuit.*deprecated.*",
 )
 
-__version__ = "0.1.0"
+__version__ = "2.1.0"

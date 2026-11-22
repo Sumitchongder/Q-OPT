@@ -1,55 +1,41 @@
-.PHONY: help install install-dev test test-verbose smoke quick full clean lint benchmark-pqc
+.PHONY: help install install-dev test experiments plan rehearse results lint clean
 
 help:
-	@echo "Q-OPT — common commands"
-	@echo ""
-	@echo "  make install        Install the package and its dependencies"
-	@echo "  make install-dev    Also install optional dev tools (black, ruff)"
-	@echo "  make test           Run the full test suite (16 tests)"
-	@echo "  make smoke          Run fast module self-checks (no pytest)"
-	@echo "  make quick          Run all experiments at reduced seed count (~15-25 min)"
-	@echo "  make full           Run all experiments at publication seed count (30+ min)"
-	@echo "  make benchmark-pqc  Run the real (liboqs) PQC benchmark, if installed"
-	@echo "  make lint           Run black --check and ruff (dev only)"
-	@echo "  make clean          Remove caches and build artifacts"
+	@echo "Q-OPT v2 - common commands"
+	@echo "  make install      install pinned dependencies + package (editable)"
+	@echo "  make test         unit, equivalence and regression tests"
+	@echo "  make experiments  run E1-E6 at publication settings (see run_all.sh)"
+	@echo "  make plan         rebuild the pre-registered hardware plan (free)"
+	@echo "  make rehearse     run notebooks/qpu_run.ipynb on FakeMarrakesh (free)"
+	@echo "  make results      regenerate docs/RESULTS.md from tables/"
+	@echo "  make lint         ruff + black --check"
 
 install:
 	pip install -r requirements.txt
-	pip install -e .
+	pip install -e . --no-deps
 
 install-dev: install
 	pip install -r requirements-dev.txt
 
 test:
-	python -m pytest tests/ -v
+	python -m pytest tests/ -q
 
-test-verbose:
-	python -m pytest tests/ -vv -s
+experiments:
+	bash run_all.sh
 
-smoke:
-	python -m qopt.network.topology
-	python -m qopt.qkd.channel
-	python -m qopt.pqc.hybrid_kdf
-	python -m qopt.threat.risk_engine
-	python -m qopt.optimization.qubo
-	python -m qopt.optimization.qubo_to_ising
-	python -m qopt.optimization.classical_baselines
-	python -m qopt.optimization.milp_baseline
-	python -m qopt.optimization.qaoa_qiskit
-	python -m qopt.optimization.rl_baseline
+plan:
+	python -c "from qopt.quantum.hardware import build_plan; build_plan('results/hardware/plan')"
+	python scripts/make_qpu_notebook.py
 
-quick:
-	bash run_all.sh quick
+rehearse:
+	cd notebooks && jupyter nbconvert --to notebook --execute qpu_run.ipynb --output /tmp/qpu_rehearsal.ipynb --ExecutePreprocessor.timeout=3600
 
-full:
-	bash run_all.sh full
-
-benchmark-pqc:
-	python scripts/summarize_pqc_benchmark.py --n-runs 5 --n-iters 2000
+results:
+	python scripts/summarize_results.py
 
 lint:
-	black --check qopt/ experiments/ tests/ scripts/
-	ruff check qopt/ experiments/ tests/ scripts/
+	ruff check qopt/agility qopt/quantum experiments tests scripts
+	black --check qopt/agility qopt/quantum experiments tests scripts
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

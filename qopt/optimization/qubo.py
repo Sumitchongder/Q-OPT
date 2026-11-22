@@ -160,7 +160,7 @@ def build_qubo(options: list, requests: list, weights: dict = None,
     # and found to erase genuine across-scenario signal (e.g. two QUBO
     # instances built at QBER=0.01 vs QBER=0.09 would both get rescaled to
     # the same [0,1] spread, making the optimizer's decisions QBER-invariant
-    # except through the hard security floor) -- this was caught via
+    # except through the hard security floor), this was caught via
     # Experiment E8 (QBER sweep) showing a flat mode-mix and is documented
     # here so the fix doesn't get silently reverted.
     def _fixed_scale(vals, ref_max):

@@ -22,7 +22,7 @@ def _pure_objective_coeffs(problem: QUBOProblem) -> np.ndarray:
     instead), but PLUS the soft security-floor penalty, so this stays
     an apples-to-apples comparison against solve_exact/solve_greedy/SA,
     which all evaluate the full penalized QUBO objective on a feasible
-    (zero-violation) bitstring -- for any feasible y the one-hot penalty
+    (zero-violation) bitstring, for any feasible y the one-hot penalty
     evaluates to exactly its offset-cancelling constant, so the two
     objectives coincide exactly on the feasible set.
     """

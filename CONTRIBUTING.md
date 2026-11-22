@@ -4,15 +4,15 @@ Thanks for your interest in this project. This repository accompanies an
 academic research program, so contributions are especially welcome in
 these areas:
 
-- Filling in the not-yet-implemented experiments listed in
-  `docs/experiment_specs.md` (E2 full sweep variants, dataset generation
-  at scale, PPO-based RL baseline, etc.)
+- Items listed under "Scope, assumptions and limitations" in `README.md`
+  (finite-key rates, a learned RL controller as an additional baseline,
+  measured PQC costs, larger hardware instances)
 - Extending `qopt/pqc/profiles.py::benchmark_live()` with additional
   measured algorithms
 - Improving numerical stability, adding new topologies, or adding new
   attack models
 - Bug reports and fixes (see `README.md`'s Errata section for the kind
-  of issue we take seriously — two real bugs were found and fixed
+  of issue we take seriously, two real bugs were found and fixed
   during this project's own development, and we'd rather find the next
   one via a clear bug report than by accident)
 
@@ -37,7 +37,7 @@ it locally.
 1. **Fork** the repository and create a feature branch:
    `git checkout -b feature/my-change`
 2. **Make your change.** Keep functions documented the way the existing
-   codebase is — every non-trivial design decision in this repo has a
+   codebase is, every non-trivial design decision in this repo has a
    docstring explaining *why*, not just *what* (see any file under
    `qopt/optimization/` for the style).
 3. **Add or update tests.** `tests/test_core.py` for anything that
@@ -70,12 +70,12 @@ your IBM Quantum token, CRN, or job IDs tied to your account in the issue.
 - Standard PEP 8, no strict formatter is enforced yet (see
   `requirements-dev.txt` for optional `black`/`ruff` if you want to run
   them locally).
-- Prefer explicit, documented trade-offs over silent workarounds — this
+- Prefer explicit, documented trade-offs over silent workarounds, this
   codebase's docstrings explain several deliberate simplifications
   (e.g. path-based rather than full flow-conservation routing in
   `qopt/optimization/qubo.py`); please keep that standard.
 
 ## Questions
 
-Open a GitHub Discussion or issue — see `README.md` for the project
-overview and `docs/experiment_specs.md` for what's implemented vs. not.
+Open a GitHub Discussion or issue, see `README.md` for the project
+overview and `docs/METHODS.md` for what's implemented vs. not.
